@@ -8,6 +8,33 @@
     <!-- PWAマニフェストをインラインBlobで自動生成 -->
     <script>
       (function() {
+        // アイコンをCanvasで動的に生成 (PNG形式)
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        
+        // 背景を描画 (白)
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(256, 256, 256, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // 白背景だと境界が分かりにくいため、黒い縁取りを追加
+        ctx.lineWidth = 12;
+        ctx.strokeStyle = '#000000';
+        ctx.stroke();
+        
+        // マイクのアイコンを描画 (黒)
+        // 元のSVGが100x100のviewBoxなので、512x512に合わせて5.12倍にスケール
+        ctx.scale(5.12, 5.12);
+        ctx.fillStyle = '#000000';
+        const micPath = new Path2D('M50 24a12 12 0 0 0-12 12v16a12 12 0 0 0 24 0V36a12 12 0 0 0-12-12zm18 28c0 9.94-8.06 18-18 18s-18-8.06-18-18h-4c0 11.25 8.44 20.55 19 21.83V80h6v-6.17C63.56 72.55 72 63.25 72 52h-4z');
+        ctx.fill(micPath);
+        
+        const iconDataUrl = canvas.toDataURL('image/png');
+        window.generatedAppIconUrl = iconDataUrl; // 画面プレビュー用に保存
+
         const manifest = {
           name: "ボイスレコーダー",
           short_name: "録音",
@@ -17,9 +44,9 @@
           theme_color: "#11151c",
           icons: [
             {
-              src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23ef4444'/%3E%3Cpath fill='%23ffffff' d='M50 24a12 12 0 0 0-12 12v16a12 12 0 0 0 24 0V36a12 12 0 0 0-12-12zm18 28c0 9.94-8.06 18-18 18s-18-8.06-18-18h-4c0 11.25 8.44 20.55 19 21.83V80h6v-6.17C63.56 72.55 72 63.25 72 52h-4z'/%3E%3C/svg%3E",
-              sizes: "192x192 512x512",
-              type: "image/svg+xml",
+              src: iconDataUrl,
+              sizes: "512x512",
+              type: "image/png",
               purpose: "any maskable"
             }
           ]
@@ -79,7 +106,7 @@
         .text-xs{font-size:0.75rem;line-height:1rem;} .text-sm{font-size:0.875rem;line-height:1.25rem;}
         .text-lg{font-size:1.125rem;line-height:1.75rem;} .text-2xl{font-size:1.5rem;line-height:2rem;}
         .text-3xl{font-size:1.875rem;line-height:2.25rem;} .text-4xl{font-size:2.25rem;line-height:2.5rem;}
-        .text-\[11px\]{font-size:11px;} .text-\[15px\]{font-size:15px;} .text-\[16px\]{font-size:16px;} .text-\[28px\]{font-size:28px;}
+        .text-\[11px\]{font-size:11px;} .text-\[15px\]{font-size:15px;} .text-\[16px\]{font-size:16px;} .text-\[24px\]{font-size:24px;} .text-\[28px\]{font-size:28px;} .text-\[32px\]{font-size:32px;}
         
         .font-light{font-weight:300;} .font-medium{font-weight:500;} .italic{font-style:italic;}
         .text-center{text-align:center;} .text-left{text-align:left;}
@@ -174,8 +201,8 @@
 
         .filename-input {
             background: transparent; border: none; border-bottom: 2px solid transparent;
-            outline: none; color: var(--text-main); font-size: 1.5rem; width: auto;
-            text-align: center; transition: border-color 0.2s; pointer-events: auto;
+            outline: none; color: var(--text-main); font-size: 1.5rem;
+            transition: border-color 0.2s; pointer-events: auto;
         }
         .filename-input:focus { border-bottom: 2px solid var(--accent); }
 
@@ -213,13 +240,18 @@
     <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
         
         <!-- 左ペイン: レコーダー -->
-        <section class="w-full md:w-1/2 flex flex-col relative border-r border-theme transition-colors duration-300">
+        <section class="w-full md:w-1/2 flex flex-col relative border-r border-theme transition-colors">
             
             <div class="flex-1 flex flex-col items-center justify-center p-8 mt-4">
-                <div class="flex items-end justify-center mb-6 relative z-20">
-                    <input type="text" id="filenameInput" value="マイ録音 1" class="filename-input font-medium tracking-wide" size="10" placeholder="ファイル名">
-                    <span class="text-theme-muted text-lg ml-1 font-light italic">.webm</span>
+                
+                <!-- ファイル名入力 (中央揃え・下揃え・接近) -->
+                <div class="flex justify-center w-full relative z-20" style="margin-top: 1.5rem; margin-bottom: 3rem;">
+                    <div class="flex items-end justify-center" style="gap: 4px;">
+                        <input type="text" id="filenameInput" value="マイ録音 1" class="filename-input font-medium tracking-wide text-center truncate" style="width: 180px; padding: 0; line-height: 1.2;" placeholder="ファイル名">
+                        <span class="text-theme-muted text-lg font-light italic" style="line-height: 1.2; padding-bottom: 1px;">.webm</span>
+                    </div>
                 </div>
+
                 <!-- 波形ビジュアライザー -->
                 <div class="w-full max-w-md h-32 relative waveform-container mb-12">
                     <canvas id="visualizerCanvas" class="w-full h-full relative z-10 pointer-events-none"></canvas>
@@ -231,24 +263,26 @@
                     <span id="pauseStatusText" class="text-theme-muted text-sm mt-2 hidden">一時停止中</span>
                 </div>
 
-                <div id="storageEstimateText" class="text-xs text-theme-muted mb-12 opacity-80">残り録音可能時間：計算中...</div>
+                <!-- 録音可能時間 (位置をさらに下に調整) -->
+                <div id="storageEstimateText" class="text-xs text-theme-muted opacity-80" style="margin-top: 1.5rem; margin-bottom: -3.5rem;">残り録音可能時間：計算中...</div>
             </div>
 
             <!-- コントロールボタン -->
             <div class="h-32 flex items-center justify-center gap-12 pb-8">
+                <!-- アイコンのズレを防ぐためSVG側に block m-auto を指定 -->
                 <button id="btnRecord" class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-all hover:scale-105 shadow-lg shadow-red-900/20 outline-none text-white text-3xl select-none">
-                    <svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                    <svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block m-auto" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
                 </button>
 
                 <div id="recordingControls" class="hidden flex items-center justify-center gap-12 w-full">
                     <button id="btnCancel" class="w-12 h-12 flex items-center justify-center text-theme-muted hover:text-red-500 transition-colors outline-none text-3xl select-none" title="キャンセル">
-                        <svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                        <svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block m-auto" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                     </button>
                     <button id="btnPauseResume" class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white hover:bg-red-700 transition-colors shadow-lg shadow-red-900/20 outline-none text-3xl select-none" title="一時停止/再開">
-                        <span id="iconPauseResume"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></span>
+                        <span id="iconPauseResume" class="flex items-center justify-center w-full h-full"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block m-auto" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></span>
                     </button>
                     <button id="btnStop" class="w-12 h-12 flex items-center justify-center text-theme-muted hover:text-green-500 transition-colors outline-none text-3xl select-none" title="完了して保存">
-                        <svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                        <svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block m-auto" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
                     </button>
                 </div>
             </div>
@@ -262,21 +296,35 @@
                 <div class="flex items-center gap-2 text-theme-muted">
                     <div class="flex items-center">
                         <input type="text" id="searchInput" class="search-input text-sm" placeholder="名前で検索...">
-                        <button id="btnSearch" class="p-2 hover:text-theme-accent transition-colors flex items-center justify-center outline-none select-none text-[24px]" title="検索">
-                            <svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        <button id="btnSearch" class="p-2 hover:text-theme-accent transition-colors flex items-center justify-center outline-none select-none text-[28px]" title="検索">
+                            <span class="flex items-center justify-center w-full h-full leading-none"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></span>
                         </button>
                     </div>
                     
-                    <button id="btnSort" class="p-2 hover:text-theme-accent transition-colors flex items-center justify-center relative outline-none select-none text-[24px]" title="並び替え">
-                        <svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
+                    <button id="btnSort" class="p-2 hover:text-theme-accent transition-colors flex items-center justify-center relative outline-none select-none text-[28px]" title="並び替え">
+                        <span class="flex items-center justify-center w-full h-full"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block" fill="currentColor"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg></span>
                         <div id="sortMenu" class="hidden absolute top-full right-0 mt-2 bg-theme-panel rounded-lg shadow-xl py-2 flex flex-col border border-theme min-w-[120px] text-sm text-left">
-                            <div class="px-4 py-2 hover:bg-black/10 cursor-pointer sort-option select-none" data-sort="date">日付順</div>
-                            <div class="px-4 py-2 hover:bg-black/10 cursor-pointer sort-option select-none" data-sort="name">名前順</div>
+                            <div class="px-4 py-2 hover:bg-black/10 cursor-pointer sort-option select-none text-main" data-sort="date">日付順</div>
+                            <div class="px-4 py-2 hover:bg-black/10 cursor-pointer sort-option select-none text-main" data-sort="name">名前順</div>
                         </div>
                     </button>
 
-                    <button id="btnSettings" class="p-2 hover:text-theme-accent transition-colors flex items-center justify-center relative outline-none select-none text-[24px]" title="設定">
-                        <svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+                    <!-- テーマを左側に (設定より前) -->
+                    <button id="btnThemeToggle" class="p-2 hover:text-theme-accent transition-colors flex items-center justify-center relative outline-none select-none text-[28px]" title="テーマカラー変更">
+                        <span class="flex items-center justify-center w-full h-full"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S15.67 9 16.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg></span>
+                        <div id="themePalette" class="hidden absolute top-full right-0 mt-2 bg-theme-panel rounded-lg shadow-xl p-3 grid grid-cols-3 gap-2 border border-theme w-40">
+                            <div class="w-8 h-8 rounded-full bg-[#11151c] border border-gray-600 cursor-pointer theme-color" data-color="black" title="Black (Dark)"></div>
+                            <div class="w-8 h-8 rounded-full bg-white border border-gray-300 cursor-pointer theme-color" data-color="white" title="White (Light)"></div>
+                            <div class="w-8 h-8 rounded-full bg-pink-500 cursor-pointer theme-color" data-color="pink" title="Pink"></div>
+                            <div class="w-8 h-8 rounded-full bg-orange-500 cursor-pointer theme-color" data-color="orange" title="Orange"></div>
+                            <div class="w-8 h-8 rounded-full bg-green-500 cursor-pointer theme-color" data-color="green" title="Green"></div>
+                            <div class="w-8 h-8 rounded-full bg-blue-500 cursor-pointer theme-color" data-color="blue" title="Blue"></div>
+                        </div>
+                    </button>
+
+                    <!-- 設定を右側に配置 -->
+                    <button id="btnSettings" class="p-2 hover:text-theme-accent transition-colors flex items-center justify-center relative outline-none select-none text-[28px]" title="設定">
+                        <span class="flex items-center justify-center w-full h-full"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block" fill="currentColor"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg></span>
                         <div id="settingsMenu" class="hidden absolute top-full right-0 mt-2 bg-theme-panel rounded-lg shadow-xl py-2 flex flex-col border border-theme min-w-[150px] text-sm text-left">
                             <div class="px-4 py-1 text-xs opacity-50 select-none">音質設定</div>
                             <div class="px-4 py-2 hover:bg-black/10 cursor-pointer flex justify-between items-center quality-option select-none" data-quality="high">
@@ -290,18 +338,6 @@
                             </div>
                         </div>
                     </button>
-
-                    <button id="btnThemeToggle" class="p-2 hover:text-theme-accent transition-colors flex items-center justify-center relative outline-none select-none text-[24px]" title="テーマカラー変更">
-                        <svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S15.67 9 16.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
-                        <div id="themePalette" class="hidden absolute top-full right-0 mt-2 bg-theme-panel rounded-lg shadow-xl p-3 grid grid-cols-3 gap-2 border border-theme w-40">
-                            <div class="w-8 h-8 rounded-full bg-[#11151c] border border-gray-600 cursor-pointer theme-color" data-color="black" title="Black (Dark)"></div>
-                            <div class="w-8 h-8 rounded-full bg-white border border-gray-300 cursor-pointer theme-color" data-color="white" title="White (Light)"></div>
-                            <div class="w-8 h-8 rounded-full bg-pink-500 cursor-pointer theme-color" data-color="pink" title="Pink"></div>
-                            <div class="w-8 h-8 rounded-full bg-orange-500 cursor-pointer theme-color" data-color="orange" title="Orange"></div>
-                            <div class="w-8 h-8 rounded-full bg-green-500 cursor-pointer theme-color" data-color="green" title="Green"></div>
-                            <div class="w-8 h-8 rounded-full bg-blue-500 cursor-pointer theme-color" data-color="blue" title="Blue"></div>
-                        </div>
-                    </button>
                 </div>
             </header>
 
@@ -309,7 +345,7 @@
             <div id="listArea" class="flex-1 overflow-y-auto no-scrollbar relative p-2">
                 <div id="emptyMessage" class="absolute inset-0 flex items-center justify-center p-10 text-center">
                     <p class="text-theme-muted text-sm leading-relaxed select-none">
-                        録音ファイルはありません。録音を開始するには左側の録音ボタンを押してください。
+                        録音ファイルはありません。<br>録音を開始するには左側の録音ボタンを押してください。
                     </p>
                 </div>
                 <div id="recordingsList" class="flex flex-col gap-1 w-full pb-4"></div>
@@ -332,8 +368,8 @@
                     
                     <!-- プレイヤー設定メニュー -->
                     <div class="relative">
-                        <button id="btnPlayerMenu" class="hover:opacity-70 p-2 text-[24px]">
-                            <span class="pointer-events-none select-none"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></span>
+                        <button id="btnPlayerMenu" class="hover:opacity-70 p-2 text-[28px]">
+                            <span class="pointer-events-none select-none flex items-center justify-center"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></span>
                         </button>
                         <div id="playerSettingsMenu" class="hidden absolute bottom-full left-0 mb-2 bg-theme-panel rounded-lg shadow-xl py-2 flex flex-col border border-theme min-w-[160px] text-sm text-left z-50 text-main">
                             <div class="px-4 py-2 hover:bg-black/10 cursor-pointer select-none" id="menuRewind">巻き戻し 5s</div>
@@ -353,7 +389,7 @@
                         </button>
                         
                         <button id="btnPlayPause" class="w-12 h-12 rounded-full flex items-center justify-center bg-theme-accent text-white shadow-md hover:scale-105 transition-transform outline-none text-2xl select-none">
-                            <span id="playIcon"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+                            <span id="playIcon" class="flex items-center justify-center w-full h-full"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block m-auto" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
                         </button>
                         
                         <button id="btnForward5" class="hover:opacity-70 outline-none text-[28px] select-none" title="5秒進む">
@@ -381,13 +417,24 @@
         </div>
     </div>
 
+    <!-- 削除確認モーダル -->
+    <div id="deleteConfirmModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-theme-panel p-6 rounded-lg shadow-2xl border border-theme w-80 max-w-[90%]">
+            <h3 class="mb-6 text-main font-medium select-none text-center">本当に削除しますか？</h3>
+            <div class="flex justify-center gap-4">
+                <button id="btnDeleteCancel" class="px-6 py-2 text-theme-muted hover:bg-black/10 rounded transition-colors select-none outline-none">キャンセル</button>
+                <button id="btnDeleteConfirm" class="px-6 py-2 bg-red-600 text-white rounded transition-colors select-none outline-none hover:bg-red-700">削除</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // === オフライン対応 SVGアイコン定義 ===
+        // === SVGアイコン定義 ===
         const svgIcons = {
-            mic: '<svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>',
-            pause: '<svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>',
-            play_arrow: '<svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
-            more_vert: '<svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>'
+            mic: '<svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block m-auto" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>',
+            pause: '<svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block m-auto" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>',
+            play_arrow: '<svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block m-auto" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+            more_vert: '<svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block m-auto" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>'
         };
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -403,8 +450,9 @@
 
             btnThemeToggle.addEventListener('click', (e) => {
                 e.stopPropagation();
+                const isHidden = themePalette.classList.contains('hidden');
                 closeAllMenus();
-                themePalette.classList.remove('hidden');
+                if (isHidden) themePalette.classList.remove('hidden');
             });
 
             document.querySelectorAll('.theme-color').forEach(el => {
@@ -453,14 +501,16 @@
             btnSort.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                const isHidden = sortMenu.classList.contains('hidden');
                 closeAllMenus();
-                sortMenu.classList.remove('hidden');
+                if (isHidden) sortMenu.classList.remove('hidden');
             });
 
             btnSettings.addEventListener('click', (e) => {
                 e.stopPropagation();
+                const isHidden = settingsMenu.classList.contains('hidden');
                 closeAllMenus();
-                settingsMenu.classList.remove('hidden');
+                if (isHidden) settingsMenu.classList.remove('hidden');
             });
 
             let currentAudioQuality = localStorage.getItem('audioQuality') || 'high'; 
@@ -801,11 +851,16 @@
 
             let currentActiveId = null;
             let itemToRename = null;
+            let itemToDelete = null;
 
             const renameModal = document.getElementById('renameModal');
             const renameInput = document.getElementById('renameInput');
             const btnRenameCancel = document.getElementById('btnRenameCancel');
             const btnRenameSave = document.getElementById('btnRenameSave');
+            
+            const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+            const btnDeleteCancel = document.getElementById('btnDeleteCancel');
+            const btnDeleteConfirm = document.getElementById('btnDeleteConfirm');
 
             function closeRenameModal() {
                 renameModal.classList.add('hidden');
@@ -819,6 +874,25 @@
                     renderList();
                 }
                 closeRenameModal();
+            });
+
+            btnDeleteCancel.addEventListener('click', () => {
+                deleteConfirmModal.classList.add('hidden');
+                itemToDelete = null;
+            });
+
+            btnDeleteConfirm.addEventListener('click', () => {
+                if (itemToDelete) {
+                    recordings = recordings.filter(r => r.id !== itemToDelete.id);
+                    if (currentActiveId === itemToDelete.id) {
+                        document.getElementById('playerPanel').classList.add('opacity-50', 'pointer-events-none');
+                        document.getElementById('audioElement').pause();
+                        currentActiveId = null;
+                    }
+                    renderList();
+                }
+                deleteConfirmModal.classList.add('hidden');
+                itemToDelete = null;
             });
 
             function renderList() {
@@ -839,25 +913,25 @@
                     filtered.forEach(rec => {
                         const item = document.createElement('div');
                         item.className = `recording-item p-4 border-b border-theme cursor-pointer transition-colors relative ${rec.id === currentActiveId ? 'active' : ''}`;
+                        // 「⋮」ボタンとそのメニューを同じrelative階層内に配置し、確実な位置表示・トグル開閉を行う
                         item.innerHTML = `
-                            <div class="flex items-center justify-between">
-                                <div class="overflow-hidden">
-                                    <div class="text-[15px] font-medium truncate w-48 filename-display select-none">${rec.name}.webm</div>
+                            <div class="flex items-center justify-between w-full">
+                                <div class="overflow-hidden flex-1 pr-4">
+                                    <div class="text-[15px] font-medium truncate filename-display select-none">${rec.name}.webm</div>
                                     <div class="text-xs text-theme-muted mt-1 flex gap-3 select-none">
-                                        <span>${rec.dateStr}</span>
-                                        <span>${rec.durationStr}</span>
+                                        <span>${rec.dateStr}</span><span>${rec.durationStr}</span>
                                     </div>
                                 </div>
-                                <div class="flex gap-2 relative">
-                                    <button class="menu-btn w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/10 transition-colors text-theme-muted hover:text-theme-main outline-none text-[20px]" onclick="event.stopPropagation()">
-                                        <span class="select-none">${svgIcons.more_vert}</span>
+                                <div class="relative flex-shrink-0">
+                                    <button class="menu-btn w-10 h-10 rounded-full flex items-center justify-center hover:bg-black/10 transition-colors text-theme-muted hover:text-main outline-none text-[28px]" onclick="event.stopPropagation()">
+                                        <span class="select-none flex items-center justify-center w-full h-full">${svgIcons.more_vert}</span>
                                     </button>
+                                    <div class="item-menu hidden absolute right-0 top-full mt-1 bg-theme-panel rounded-md shadow-xl py-2 z-50 border border-theme min-w-[140px] text-sm text-left cursor-default" onclick="event.stopPropagation()">
+                                        <button class="w-full text-left px-4 py-2 hover:bg-black/10 transition-colors btn-rename select-none outline-none text-main">名前を変更</button>
+                                        <a href="${rec.url}" download="${rec.name}.webm" class="block w-full text-left px-4 py-2 hover:bg-black/10 transition-colors select-none outline-none text-main" style="text-decoration: none;">ダウンロード</a>
+                                        <button class="w-full text-left px-4 py-2 hover:bg-black/10 transition-colors btn-delete select-none outline-none text-main">削除</button>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="item-menu hidden absolute right-8 top-10 bg-theme-panel rounded-md shadow-xl py-2 z-20 border border-theme min-w-[140px] text-sm text-left">
-                                <button class="w-full text-left px-4 py-2 hover:bg-black/10 transition-colors btn-rename select-none outline-none">名前を変更</button>
-                                <a href="${rec.url}" download="${rec.name}.webm" class="block w-full text-left px-4 py-2 hover:bg-black/10 transition-colors select-none outline-none" onclick="event.stopPropagation()">ダウンロード</a>
-                                <button class="w-full text-left px-4 py-2 text-red-500 hover:bg-black/10 transition-colors btn-delete select-none outline-none">削除</button>
                             </div>
                         `;
 
@@ -872,20 +946,17 @@
                         menuBtn.addEventListener('click', (e) => {
                             e.preventDefault();
                             e.stopPropagation();
+                            const isHidden = itemMenu.classList.contains('hidden');
                             closeAllMenus();
-                            itemMenu.classList.remove('hidden');
+                            if (isHidden) itemMenu.classList.remove('hidden');
                         });
 
                         item.querySelector('.btn-delete').addEventListener('click', (e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            recordings = recordings.filter(r => r.id !== rec.id);
-                            if (currentActiveId === rec.id) {
-                                document.getElementById('playerPanel').classList.add('opacity-50', 'pointer-events-none');
-                                document.getElementById('audioElement').pause();
-                                currentActiveId = null;
-                            }
-                            renderList();
+                            itemMenu.classList.add('hidden');
+                            itemToDelete = rec;
+                            deleteConfirmModal.classList.remove('hidden');
                         });
 
                         item.querySelector('.btn-rename').addEventListener('click', (e) => {
@@ -1010,8 +1081,9 @@
             btnPlayerMenu.addEventListener('click', (e) => {
                 e.preventDefault(); 
                 e.stopPropagation();
+                const isHidden = playerSettingsMenu.classList.contains('hidden');
                 closeAllMenus();
-                playerSettingsMenu.classList.remove('hidden');
+                if (isHidden) playerSettingsMenu.classList.remove('hidden');
             });
 
             menuRewind.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); audioEl.currentTime = Math.max(0, audioEl.currentTime - 5); playerSettingsMenu.classList.add('hidden'); });
