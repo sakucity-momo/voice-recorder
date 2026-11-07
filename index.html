@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="black">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ボイスレコーダー</title>
+    <meta name="theme-color" content="#11151c">
+    
+    <!-- 外部のmanifest.jsonを読み込むように修正 -->
+    <link rel="manifest" href="./manifest.json">
+    
+    <!-- オフライン対応用の埋め込みCSS (Tailwindの代替) -->
+    <style>
+        *,::before,::after{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb;}
+        body{margin:0;line-height:inherit;}
+        button,input{font-family:inherit;font-size:100%;font-weight:inherit;line-height:inherit;color:inherit;margin:0;padding:0;background:transparent;}
+        button{cursor:pointer;outline:none;}
+        button:focus{outline:2px solid transparent;outline-offset:2px;}
+        canvas{display:block;vertical-align:middle;}
+        
+        .absolute{position:absolute;} .relative{position:relative;} .fixed{position:fixed;}
+        .inset-0{top:0;right:0;bottom:0;left:0;}
+        .top-full{top:100%;} .bottom-full{bottom:100%;}
+        .right-0{right:0;} .left-0{left:0;}
+        .z-10{z-index:10;} .z-20{z-index:20;} .z-30{z-index:30;} .z-50{z-index:50;}
+        
+        .flex{display:flex;} .grid{display:grid;} .hidden{display:none;} .block{display:block;}
+        .flex-col{flex-direction:column;} .md\:flex-row{flex-direction:column;}
+        @media (min-width: 768px) { .md\:flex-row{flex-direction:row;} .md\:w-1\/2{width:50%;} }
+        
+        .flex-1{flex:1 1 0%;} .flex-shrink-0{flex-shrink:0;}
+        .grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr));}
+        
+        .items-center{align-items:center;} .items-end{align-items:flex-end;}
+        .justify-center{justify-content:center;} .justify-between{justify-content:space-between;} .justify-end{justify-content:flex-end;}
+        
+        .w-full{width:100%;} .h-full{height:100%;} .h-screen{height:100vh;}
+        .w-16{width:4rem;} .h-16{height:4rem;}
+        .w-12{width:3rem;} .h-12{height:3rem;}
+        .w-8{width:2rem;} .h-8{height:2rem;}
+        .w-40{width:10rem;} .w-48{width:12rem;} .w-80{width:20rem;}
+        .w-\[1em\]{width:1em;} .h-\[1em\]{height:1em;}
+        .max-w-md{max-width:28rem;} .max-w-\[90\%\]{max-width:90%;}
+        .min-w-\[120px\]{min-width:120px;} .min-w-\[140px\]{min-width:140px;} .min-w-\[150px\]{min-width:150px;} .min-w-\[160px\]{min-width:160px;}
+        .h-32{height:8rem;}
+        
+        .gap-1{gap:0.25rem;} .gap-2{gap:0.5rem;} .gap-3{gap:0.75rem;} .gap-6{gap:1.5rem;} .gap-12{gap:3rem;}
+        
+        .p-2{padding:0.5rem;} .p-3{padding:0.75rem;} .p-4{padding:1rem;} .p-6{padding:1.5rem;} .p-8{padding:2rem;} .p-10{padding:2.5rem;}
+        .px-4{padding-left:1rem;padding-right:1rem;} .px-6{padding-left:1.5rem;padding-right:1.5rem;}
+        .py-1{padding-top:0.25rem;padding-bottom:0.25rem;} .py-2{padding-top:0.5rem;padding-bottom:0.5rem;} .py-4{padding-top:1rem;padding-bottom:1rem;}
+        .mb-2{margin-bottom:0.5rem;} .mb-3{margin-bottom:0.75rem;} .mb-4{margin-bottom:1rem;} .mb-6{margin-bottom:1.5rem;} .mb-12{margin-bottom:3rem;}
+        .mt-1{margin-top:0.25rem;} .mt-2{margin-top:0.5rem;} .mt-4{margin-top:1rem;} .ml-1{margin-left:0.25rem;}
+        .pb-4{padding-bottom:1rem;} .pb-8{padding-bottom:2rem;}
+        
+        .text-xs{font-size:0.75rem;line-height:1rem;} .text-sm{font-size:0.875rem;line-height:1.25rem;}
+        .text-lg{font-size:1.125rem;line-height:1.75rem;} .text-2xl{font-size:1.5rem;line-height:2rem;}
+        .text-3xl{font-size:1.875rem;line-height:2.25rem;} .text-4xl{font-size:2.25rem;line-height:2.5rem;}
+        .text-\[11px\]{font-size:11px;} .text-\[15px\]{font-size:15px;} .text-\[16px\]{font-size:16px;} .text-\[24px\]{font-size:24px;} .text-\[28px\]{font-size:28px;} .text-\[32px\]{font-size:32px;}
+        
+        .font-light{font-weight:300;} .font-medium{font-weight:500;} .italic{font-style:italic;}
+        .text-center{text-align:center;} .text-left{text-align:left;}
+        .tracking-wide{letter-spacing:0.025em;} .tracking-wider{letter-spacing:0.05em;}
+        .leading-relaxed{line-height:1.625;}
+        .truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+        
+        .bg-red-600{background-color:#dc2626;} .bg-red-700{background-color:#b91c1c;}
+        .bg-white{background-color:#ffffff;}
+        .bg-\[\#11151c\]{background-color:#11151c;}
+        .bg-pink-500{background-color:#ec4899;} .bg-orange-500{background-color:#f97316;}
+        .bg-green-500{background-color:#22c55e;} .bg-blue-500{background-color:#3b82f6;}
+        .bg-black\/10{background-color:rgba(0,0,0,0.1);} .bg-black\/60{background-color:rgba(0,0,0,0.6);}
+        .hover\:bg-red-700:hover{background-color:#b91c1c;} .hover\:bg-black\/10:hover{background-color:rgba(0,0,0,0.1);}
+        
+        .text-white{color:#ffffff;} .text-red-500{color:#ef4444;} .text-green-500{color:#22c55e;}
+        .hover\:text-red-500:hover{color:#ef4444;} .hover\:text-green-500:hover{color:#22c55e;}
+        
+        .rounded{border-radius:0.25rem;} .rounded-md{border-radius:0.375rem;} .rounded-lg{border-radius:0.5rem;} .rounded-full{border-radius:9999px;}
+        
+        .shadow-md{box-shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);}
+        .shadow-lg{box-shadow:0 10px 15px -3px rgba(0,0,0,0.1),0 4px 6px -2px rgba(0,0,0,0.05);}
+        .shadow-xl{box-shadow:0 20px 25px -5px rgba(0,0,0,0.1),0 10px 10px -5px rgba(0,0,0,0.04);}
+        .shadow-2xl{box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);}
+        .shadow-red-900\/20{box-shadow:0 10px 15px -3px rgba(127,29,29,0.2);}
+        .shadow-\[0_-10px_30px_rgba\(0\,0\,0\,0\.1\)\]{box-shadow:0 -10px 30px rgba(0,0,0,0.1);}
+        
+        .border{border-width:1px;} .border-b{border-bottom-width:1px;} .border-t{border-top-width:1px;} .border-r{border-right-width:1px;}
+        .border-gray-600{border-color:#4b5563;} .border-gray-300{border-color:#d1d5db;}
+        
+        .opacity-50{opacity:0.5;} .opacity-80{opacity:0.8;} .opacity-90{opacity:0.9;}
+        .hover\:opacity-70:hover{opacity:0.7;} .hover\:opacity-90:hover{opacity:0.9;}
+        
+        .cursor-pointer{cursor:pointer;} .cursor-default{cursor:default;}
+        .pointer-events-none{pointer-events:none;} .pointer-events-auto{pointer-events:auto;}
+        
+        .overflow-hidden{overflow:hidden;} .overflow-y-auto{overflow-y:auto;}
+        
+        .transition-colors{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke;transition-timing-function:cubic-bezier(0.4,0,0.2,1);transition-duration:150ms;}
+        .transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4,0,0.2,1);transition-duration:150ms;}
+        .transition-transform{transition-property:transform;transition-timing-function:cubic-bezier(0.4,0,0.2,1);transition-duration:150ms;}
+        .duration-300{transition-duration:300ms;}
+        
+        .hover\:scale-105:hover{transform:scale(1.05);}
+        .backdrop-blur-sm{backdrop-filter:blur(4px);}
+        .outline-none{outline:2px solid transparent;outline-offset:2px;}
+    </style>
+
+    <style>
+        /* テーマ定義およびメインのカスタムCSS */
+        :root {
+            --bg-main: #11151c; --bg-panel: #1a212d; --text-main: #ffffff;
+            --text-muted: #9ca3af; --accent: #3b82f6; --accent-hover: #2563eb; --border-color: rgba(255, 255, 255, 0.1);
+        }
+        [data-theme="white"] {
+            --bg-main: #f9fafb; --bg-panel: #ffffff; --text-main: #111827;
+            --text-muted: #6b7280; --accent: #3b82f6; --accent-hover: #2563eb; --border-color: rgba(0, 0, 0, 0.1);
+        }
+        [data-theme="pink"] {
+            --bg-main: #fdf2f8; --bg-panel: #fce7f3; --text-main: #831843;
+            --text-muted: #be185d; --accent: #ec4899; --accent-hover: #db2777; --border-color: rgba(131, 24, 67, 0.1);
+        }
+        [data-theme="orange"] {
+            --bg-main: #fff7ed; --bg-panel: #ffedd5; --text-main: #7c2d12;
+            --text-muted: #c2410c; --accent: #f97316; --accent-hover: #ea580c; --border-color: rgba(124, 45, 18, 0.1);
+        }
+        [data-theme="green"] {
+            --bg-main: #f0fdf4; --bg-panel: #dcfce7; --text-main: #14532d;
+            --text-muted: #15803d; --accent: #22c55e; --accent-hover: #16a34a; --border-color: rgba(20, 83, 45, 0.1);
+        }
+        [data-theme="blue"] {
+            --bg-main: #eff6ff; --bg-panel: #dbeafe; --text-main: #1e3a8a;
+            --text-muted: #1d4ed8; --accent: #3b82f6; --accent-hover: #2563eb; --border-color: rgba(30, 58, 138, 0.1);
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: var(--bg-main); color: var(--text-main);
+            transition: background-color 0.4s ease, color 0.4s ease;
+            user-select: none; -webkit-user-select: none; cursor: default;
+        }
+        input { user-select: auto; -webkit-user-select: auto; }
+        input[type=range] { cursor: pointer; }
+
+        .border-theme { border-color: var(--border-color); }
+        .bg-theme-panel { background-color: var(--bg-panel); transition: background-color 0.4s ease; }
+        .text-theme-muted { color: var(--text-muted); }
+        .bg-theme-accent { background-color: var(--accent); }
+        .text-theme-accent { color: var(--accent); }
+        .text-main { color: var(--text-main); }
+        .focus\:border-theme-accent:focus { border-color: var(--accent); }
+
+        .filename-input {
+            background: transparent; border: none; border-bottom: 2px solid transparent;
+            outline: none; color: var(--text-main); font-size: 1.5rem;
+            transition: border-color 0.2s; pointer-events: auto;
+        }
+        .filename-input:focus { border-bottom: 2px solid var(--accent); }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 12px; width: 12px; border-radius: 50%;
+            background: var(--accent); cursor: pointer; margin-top: -4px; box-shadow: 0 0 0 2px var(--bg-panel);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: var(--border-color); border-radius: 2px;
+        }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .recording-item:hover { background-color: var(--border-color); }
+        .recording-item.active { background-color: var(--border-color); border-left: 3px solid var(--accent); }
+
+        .search-input {
+            width: 0; opacity: 0; pointer-events: none;
+            transition: width 0.3s ease, opacity 0.3s ease;
+            background: var(--bg-panel); color: var(--text-main);
+            border-radius: 9999px; padding: 0; border: 1px solid transparent; outline: none;
+        }
+        .search-input.active {
+            width: 180px; opacity: 1; pointer-events: auto; padding: 0.25rem 1rem; border-color: var(--border-color);
+        }
+        
+        .select-none { user-select: none; -webkit-user-select: none; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- メインコンテンツ -->
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+        
+        <!-- 左ペイン: レコーダー -->
+        <section class="w-full md:w-1/2 flex flex-col relative border-r border-theme transition-colors">
+            
+            <div class="flex-1 flex flex-col items-center justify-center p-8 mt-4">
+                
+                <!-- ファイル名入力 -->
+                <div class="flex justify-center w-full relative z-20" style="margin-top: 1.5rem; margin-bottom: 3rem;">
+                    <div class="flex items-end justify-center" style="gap: 4px;">
+                        <input type="text" id="filenameInput" value="マイ録音 1" class="filename-input font-medium tracking-wide text-center truncate" style="width: 180px; padding: 0; line-height: 1.2;" placeholder="ファイル名">
+                        <span class="text-theme-muted text-lg font-light italic" style="line-height: 1.2; padding-bottom: 1px;">.webm</span>
+                    </div>
+                </div>
+
+                <!-- 波形ビジュアライザー -->
+                <div class="w-full max-w-md h-32 relative waveform-container mb-12">
+                    <canvas id="visualizerCanvas" class="w-full h-full relative z-10 pointer-events-none"></canvas>
+                </div>
+
+                <!-- ステータス / タイマー -->
+                <div class="text-theme-muted text-lg mb-12 h-16 flex flex-col items-center justify-center select-none">
+                    <span id="recordStatusText" class="text-lg transition-colors">開始準備完了</span>
+                    <span id="pauseStatusText" class="text-theme-muted text-sm mt-2 hidden">一時停止中</span>
+                </div>
+
+                <!-- 録音可能時間 -->
+                <div id="storageEstimateText" class="text-xs text-theme-muted opacity-80" style="margin-top: 1.5rem; margin-bottom: -3.5rem;">残り録音可能時間：計算中...</div>
+            </div>
+
+            <!-- コントロールボタン -->
+            <div class="h-32 flex items-center justify-center gap-12 pb-8">
+                <button id="btnRecord" class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-all hover:scale-105 shadow-lg shadow-red-900/20 outline-none text-white text-3xl select-none">
+                    <svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block m-auto" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                </button>
+
+                <div id="recordingControls" class="hidden flex items-center justify-center gap-12 w-full">
+                    <button id="btnCancel" class="w-12 h-12 flex items-center justify-center text-theme-muted hover:text-red-500 transition-colors outline-none text-3xl select-none" title="キャンセル">
+                        <svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block m-auto" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                    </button>
+                    <button id="btnPauseResume" class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white hover:bg-red-700 transition-colors shadow-lg shadow-red-900/20 outline-none text-3xl select-none" title="一時停止/再開">
+                        <span id="iconPauseResume" class="flex items-center justify-center w-full h-full"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block m-auto" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></span>
+                    </button>
+                    <button id="btnStop" class="w-12 h-12 flex items-center justify-center text-theme-muted hover:text-green-500 transition-colors outline-none text-3xl select-none" title="完了して保存">
+                        <svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block m-auto" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右ペイン: リストとプレイヤー -->
+        <section class="w-full md:w-1/2 flex flex-col relative transition-colors duration-300">
+            
+            <!-- ヘッダー -->
+            <header class="h-16 flex-shrink-0 flex items-center justify-end px-6 border-b border-theme relative z-30">
+                <div class="flex items-center gap-2 text-theme-muted">
+                    <div class="flex items-center">
+                        <input type="text" id="searchInput" class="search-input text-sm" placeholder="名前で検索...">
+                        <button id="btnSearch" class="p-2 hover:text-theme-accent transition-colors flex items-center justify-center outline-none select-none text-[28px]" title="検索">
+                            <span class="flex items-center justify-center w-full h-full leading-none"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></span>
+                        </button>
+                    </div>
+                    
+                    <button id="btnSort" class="p-2 hover:text-theme-accent transition-colors flex items-center justify-center relative outline-none select-none text-[28px]" title="並び替え">
+                        <span class="flex items-center justify-center w-full h-full"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block" fill="currentColor"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg></span>
+                        <div id="sortMenu" class="hidden absolute top-full right-0 mt-2 bg-theme-panel rounded-lg shadow-xl py-2 flex flex-col border border-theme min-w-[120px] text-sm text-left">
+                            <div class="px-4 py-2 hover:bg-black/10 cursor-pointer sort-option select-none text-main" data-sort="date">日付順</div>
+                            <div class="px-4 py-2 hover:bg-black/10 cursor-pointer sort-option select-none text-main" data-sort="name">名前順</div>
+                        </div>
+                    </button>
+
+                    <button id="btnThemeToggle" class="p-2 hover:text-theme-accent transition-colors flex items-center justify-center relative outline-none select-none text-[28px]" title="テーマカラー変更">
+                        <span class="flex items-center justify-center w-full h-full"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S15.67 9 16.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg></span>
+                        <div id="themePalette" class="hidden absolute top-full right-0 mt-2 bg-theme-panel rounded-lg shadow-xl p-3 grid grid-cols-3 gap-2 border border-theme w-40">
+                            <div class="w-8 h-8 rounded-full bg-[#11151c] border border-gray-600 cursor-pointer theme-color" data-color="black" title="Black (Dark)"></div>
+                            <div class="w-8 h-8 rounded-full bg-white border border-gray-300 cursor-pointer theme-color" data-color="white" title="White (Light)"></div>
+                            <div class="w-8 h-8 rounded-full bg-pink-500 cursor-pointer theme-color" data-color="pink" title="Pink"></div>
+                            <div class="w-8 h-8 rounded-full bg-orange-500 cursor-pointer theme-color" data-color="orange" title="Orange"></div>
+                            <div class="w-8 h-8 rounded-full bg-green-500 cursor-pointer theme-color" data-color="green" title="Green"></div>
+                            <div class="w-8 h-8 rounded-full bg-blue-500 cursor-pointer theme-color" data-color="blue" title="Blue"></div>
+                        </div>
+                    </button>
+
+                    <button id="btnSettings" class="p-2 hover:text-theme-accent transition-colors flex items-center justify-center relative outline-none select-none text-[28px]" title="設定">
+                        <span class="flex items-center justify-center w-full h-full"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block" fill="currentColor"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg></span>
+                        <div id="settingsMenu" class="hidden absolute top-full right-0 mt-2 bg-theme-panel rounded-lg shadow-xl py-2 flex flex-col border border-theme min-w-[150px] text-sm text-left">
+                            <div class="px-4 py-1 text-xs opacity-50 select-none">音質設定</div>
+                            <div class="px-4 py-2 hover:bg-black/10 cursor-pointer flex justify-between items-center quality-option select-none" data-quality="high">
+                                <span>高音質 (High)</span><span class="text-[16px] hidden check-icon"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                            </div>
+                            <div class="px-4 py-2 hover:bg-black/10 cursor-pointer flex justify-between items-center quality-option select-none" data-quality="normal">
+                                <span>標準 (Normal)</span><span class="text-[16px] hidden check-icon"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                            </div>
+                            <div class="px-4 py-2 hover:bg-black/10 cursor-pointer flex justify-between items-center quality-option select-none" data-quality="low">
+                                <span>低音質 (Low)</span><span class="text-[16px] hidden check-icon"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+            </header>
+
+            <!-- リストエリア -->
+            <div id="listArea" class="flex-1 overflow-y-auto no-scrollbar relative p-2">
+                <div id="emptyMessage" class="absolute inset-0 flex items-center justify-center p-10 text-center">
+                    <p class="text-theme-muted text-sm leading-relaxed select-none">
+                        録音ファイルはありません。<br>録音を開始するには左側の録音ボタンを押してください。
+                    </p>
+                </div>
+                <div id="recordingsList" class="flex flex-col gap-1 w-full pb-4"></div>
+            </div>
+
+            <!-- プレイヤーエリア (下部固定) -->
+            <div id="playerPanel" class="bg-theme-panel flex-shrink-0 flex flex-col px-6 py-4 border-t border-theme shadow-[0_-10px_30px_rgba(0,0,0,0.1)] transition-all duration-300 opacity-50 pointer-events-none relative z-20 select-none">
+                
+                <!-- プログレスバーと時間 -->
+                <div class="w-full mb-3">
+                    <input type="range" id="seekSlider" value="0" min="0" max="100" step="0.1">
+                    <div class="flex justify-between text-[11px] text-theme-accent mt-1 opacity-80 cursor-default">
+                        <span id="currentTimeDisplay">00:00</span>
+                        <span id="durationDisplay">00:00</span>
+                    </div>
+                </div>
+
+                <!-- プレイヤーコントロール -->
+                <div class="flex-1 flex items-center justify-between text-theme-accent">
+                    
+                    <div class="relative">
+                        <button id="btnPlayerMenu" class="hover:opacity-70 p-2 text-[28px]">
+                            <span class="pointer-events-none select-none flex items-center justify-center"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></span>
+                        </button>
+                        <div id="playerSettingsMenu" class="hidden absolute bottom-full left-0 mb-2 bg-theme-panel rounded-lg shadow-xl py-2 flex flex-col border border-theme min-w-[160px] text-sm text-left z-50 text-main">
+                            <div class="px-4 py-2 hover:bg-black/10 cursor-pointer select-none" id="menuRewind">巻き戻し 5s</div>
+                            <div class="px-4 py-2 hover:bg-black/10 cursor-pointer select-none" id="menuForward">早送り 5s</div>
+                            <div class="px-4 py-2 hover:bg-black/10 cursor-pointer flex justify-between items-center select-none" id="menuLoop">
+                                <span>ループ</span><span class="text-[16px] hidden" id="iconLoopCheck"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                            </div>
+                            <div class="px-4 py-2 hover:bg-black/10 cursor-pointer flex justify-between items-center select-none" id="menuSkipSilence">
+                                <span>無音を飛ばす</span><span class="text-[16px] hidden" id="iconSkipCheck"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-6">
+                        <button id="btnReplay5" class="hover:opacity-70 outline-none text-[28px] select-none" title="5秒戻る">
+                            <svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/><text x="12" y="16" font-size="7" text-anchor="middle" font-weight="bold" fill="currentColor">5</text></svg>
+                        </button>
+                        
+                        <button id="btnPlayPause" class="w-12 h-12 rounded-full flex items-center justify-center bg-theme-accent text-white shadow-md hover:scale-105 transition-transform outline-none text-2xl select-none">
+                            <span id="playIcon" class="flex items-center justify-center w-full h-full"><svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block m-auto" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+                        </button>
+                        
+                        <button id="btnForward5" class="hover:opacity-70 outline-none text-[28px] select-none" title="5秒進む">
+                            <svg viewBox="0 0 24 24" class="w-[1em] h-[1em]" fill="currentColor"><path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/><text x="12" y="16" font-size="7" text-anchor="middle" font-weight="bold" fill="currentColor">5</text></svg>
+                        </button>
+                    </div>
+
+                    <button id="btnSpeed" class="text-sm font-medium hover:opacity-70 w-8 outline-none select-none">1x</button>
+                </div>
+                
+                <audio id="audioElement" class="hidden"></audio>
+            </div>
+        </section>
+    </main>
+
+    <!-- 名前変更モーダル -->
+    <div id="renameModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-theme-panel p-6 rounded-lg shadow-2xl border border-theme w-80 max-w-[90%]">
+            <h3 class="mb-4 text-main font-medium select-none">ファイル名を変更</h3>
+            <input type="text" id="renameInput" class="w-full bg-black/10 border border-theme rounded p-2 mb-6 text-main outline-none focus:border-theme-accent transition-colors" autocomplete="off">
+            <div class="flex justify-end gap-3">
+                <button id="btnRenameCancel" class="px-4 py-2 text-theme-muted hover:bg-black/10 rounded transition-colors select-none outline-none">キャンセル</button>
+                <button id="btnRenameSave" class="px-4 py-2 bg-theme-accent text-white rounded transition-colors select-none outline-none hover:opacity-90">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 削除確認モーダル -->
+    <div id="deleteConfirmModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-theme-panel p-6 rounded-lg shadow-2xl border border-theme w-80 max-w-[90%]">
+            <h3 class="mb-6 text-main font-medium select-none text-center">本当に削除しますか？</h3>
+            <div class="flex justify-center gap-4">
+                <button id="btnDeleteCancel" class="px-6 py-2 text-theme-muted hover:bg-black/10 rounded transition-colors select-none outline-none">キャンセル</button>
+                <button id="btnDeleteConfirm" class="px-6 py-2 bg-red-600 text-white rounded transition-colors select-none outline-none hover:bg-red-700">削除</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const svgIcons = {
+            mic: '<svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block m-auto" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>',
+            pause: '<svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block m-auto" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>',
+            play_arrow: '<svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block m-auto" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+            more_vert: '<svg viewBox="0 0 24 24" class="w-[1em] h-[1em] block m-auto" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>'
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnThemeToggle = document.getElementById('btnThemeToggle');
+            const themePalette = document.getElementById('themePalette');
+            const body = document.body;
+
+            const savedTheme = localStorage.getItem('appTheme') || 'black';
+            body.setAttribute('data-theme', savedTheme);
+
+            btnThemeToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isHidden = themePalette.classList.contains('hidden');
+                closeAllMenus();
+                if (isHidden) themePalette.classList.remove('hidden');
+            });
+
+            document.querySelectorAll('.theme-color').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const color = e.target.dataset.color;
+                    body.setAttribute('data-theme', color);
+                    localStorage.setItem('appTheme', color); 
+                    themePalette.classList.add('hidden');
+                });
+            });
+
+            const btnSearch = document.getElementById('btnSearch');
+            const searchInput = document.getElementById('searchInput');
+            const btnSort = document.getElementById('btnSort');
+            const sortMenu = document.getElementById('sortMenu');
+            const btnSettings = document.getElementById('btnSettings');
+            const settingsMenu = document.getElementById('settingsMenu');
+
+            function closeAllMenus() {
+                themePalette.classList.add('hidden');
+                sortMenu.classList.add('hidden');
+                settingsMenu.classList.add('hidden');
+                playerSettingsMenu.classList.add('hidden');
+                document.querySelectorAll('.item-menu').forEach(m => m.classList.add('hidden'));
+            }
+            document.addEventListener('click', closeAllMenus);
+
+            btnSearch.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                searchInput.classList.toggle('active');
+                if (searchInput.classList.contains('active')) searchInput.focus();
+                else {
+                    searchInput.value = '';
+                    renderList();
+                }
+            });
+
+            searchInput.addEventListener('click', (e) => e.stopPropagation());
+            searchInput.addEventListener('input', () => renderList());
+
+            btnSort.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const isHidden = sortMenu.classList.contains('hidden');
+                closeAllMenus();
+                if (isHidden) sortMenu.classList.remove('hidden');
+            });
+
+            btnSettings.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isHidden = settingsMenu.classList.contains('hidden');
+                closeAllMenus();
+                if (isHidden) settingsMenu.classList.remove('hidden');
+            });
+
+            let currentAudioQuality = localStorage.getItem('audioQuality') || 'high'; 
+            const qualityOptions = document.querySelectorAll('.quality-option');
+            
+            qualityOptions.forEach(opt => {
+                const check = opt.querySelector('.check-icon');
+                if(opt.dataset.quality === currentAudioQuality) check.classList.remove('hidden');
+                else check.classList.add('hidden');
+            });
+            
+            qualityOptions.forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    currentAudioQuality = option.dataset.quality;
+                    localStorage.setItem('audioQuality', currentAudioQuality);
+                    
+                    qualityOptions.forEach(opt => {
+                        const check = opt.querySelector('.check-icon');
+                        if(opt.dataset.quality === currentAudioQuality) check.classList.remove('hidden');
+                        else check.classList.add('hidden');
+                    });
+                    
+                    settingsMenu.classList.add('hidden');
+                    updateStorageEstimate();
+                });
+            });
+
+            const storageEstimateText = document.getElementById('storageEstimateText');
+            async function updateStorageEstimate() {
+                try {
+                    if (navigator.storage && navigator.storage.estimate) {
+                        const estimate = await navigator.storage.estimate();
+                        const availableBytes = estimate.quota - estimate.usage;
+                        
+                        let bitsPerSecond = 128000;
+                        if (currentAudioQuality === 'high') bitsPerSecond = 256000;
+                        else if (currentAudioQuality === 'low') bitsPerSecond = 64000;
+                        
+                        const bytesPerSecond = bitsPerSecond / 8;
+                        const availableSeconds = availableBytes / bytesPerSecond;
+                        
+                        const hours = Math.floor(availableSeconds / 3600);
+                        storageEstimateText.textContent = `残り録音可能時間：約${hours}h`;
+                    } else {
+                        storageEstimateText.textContent = '残り録音可能時間：不明';
+                    }
+                } catch (e) {
+                    storageEstimateText.textContent = '残り録音可能時間：取得できません';
+                }
+            }
+            updateStorageEstimate();
+
+            const canvas = document.getElementById('visualizerCanvas');
+            const canvasCtx = canvas.getContext('2d');
+            let audioCtx, analyser, source, animationId;
+            let isVisualizerActive = false;
+            
+            const HISTORY_SIZE = 350; 
+            const volumeHistory = new Array(HISTORY_SIZE).fill(0);
+
+            function resizeCanvas() {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                drawIdleWaveform();
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            function drawIdleWaveform() {
+                if(isVisualizerActive) return;
+                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                const centerY = canvas.height / 2;
+                const computedStyle = getComputedStyle(document.body);
+                const mutedColor = computedStyle.getPropertyValue('--text-muted').trim();
+                canvasCtx.fillStyle = mutedColor;
+                canvasCtx.globalAlpha = 0.3;
+                
+                const barWidth = canvas.width / HISTORY_SIZE;
+                for(let i = 0; i < HISTORY_SIZE; i++) {
+                    let x = i * barWidth;
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(x + barWidth/2, centerY, 1, 0, Math.PI * 2);
+                    canvasCtx.fill();
+                }
+                canvasCtx.globalAlpha = 1.0;
+            }
+
+            function startVisualizer(stream) {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                analyser = audioCtx.createAnalyser();
+                source = audioCtx.createMediaStreamSource(stream);
+                source.connect(analyser);
+                analyser.fftSize = 256;
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+
+                isVisualizerActive = true;
+                volumeHistory.fill(0);
+
+                let lastDrawTime = 0;
+
+                function draw() {
+                    if (!isVisualizerActive) return;
+                    animationId = requestAnimationFrame(draw);
+                    
+                    const now = Date.now();
+                    if (now - lastDrawTime < 30) return;
+                    lastDrawTime = now;
+
+                    analyser.getByteFrequencyData(dataArray);
+                    let sum = 0;
+                    for(let i=0; i<bufferLength; i++) sum += dataArray[i];
+                    let avgVolume = sum / bufferLength;
+                    
+                    avgVolume = Math.min(255, avgVolume * 1.5);
+
+                    volumeHistory.shift();
+                    volumeHistory.push(avgVolume);
+
+                    canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    const centerY = canvas.height / 2;
+                    const barWidth = canvas.width / HISTORY_SIZE;
+                    const computedStyle = getComputedStyle(document.body);
+                    const accentColor = computedStyle.getPropertyValue('--accent').trim();
+
+                    for(let i = 0; i < HISTORY_SIZE; i++) {
+                        const vol = volumeHistory[i];
+                        if (vol === 0) continue;
+
+                        const barHeight = (vol / 255) * canvas.height;
+                        const x = i * barWidth;
+                        
+                        canvasCtx.beginPath();
+                        if (vol > 150) {
+                            canvasCtx.strokeStyle = '#ef4444';
+                            canvasCtx.globalAlpha = 0.8;
+                        } else {
+                            canvasCtx.strokeStyle = accentColor || '#3b82f6';
+                            canvasCtx.globalAlpha = 0.5;
+                        }
+                        
+                        canvasCtx.lineWidth = 0.8; 
+                        canvasCtx.moveTo(x + barWidth/2, centerY - barHeight/2);
+                        canvasCtx.lineTo(x + barWidth/2, centerY + barHeight/2);
+                        canvasCtx.stroke();
+                    }
+                    canvasCtx.globalAlpha = 1.0;
+                }
+                draw();
+            }
+
+            function stopVisualizer() {
+                isVisualizerActive = false;
+                cancelAnimationFrame(animationId);
+                drawIdleWaveform();
+            }
+
+            let mediaRecorder;
+            let audioChunks = [];
+            let stream;
+            let timerInterval;
+            let startTime = 0;
+            let recordingTime = 0;
+            let isCancelled = false;
+
+            const btnRecord = document.getElementById('btnRecord');
+            const recordingControls = document.getElementById('recordingControls');
+            const btnCancel = document.getElementById('btnCancel');
+            const btnPauseResume = document.getElementById('btnPauseResume');
+            const iconPauseResume = document.getElementById('iconPauseResume');
+            const btnStop = document.getElementById('btnStop');
+            const recordStatusText = document.getElementById('recordStatusText');
+            const pauseStatusText = document.getElementById('pauseStatusText');
+            const filenameInput = document.getElementById('filenameInput');
+
+            function formatTime(ms) {
+                const totalSeconds = Math.floor(ms / 1000);
+                const m = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+                const s = String(totalSeconds % 60).padStart(2, '0');
+                return `${m}:${s}`;
+            }
+
+            function updateStatusDisplay() {
+                recordStatusText.textContent = formatTime(recordingTime);
+                recordStatusText.className = 'text-4xl font-light tracking-wider text-theme-accent transition-colors';
+            }
+
+            function resetStatusDisplay() {
+                recordStatusText.textContent = '開始準備完了';
+                recordStatusText.className = 'text-theme-muted text-lg transition-colors';
+                pauseStatusText.classList.add('hidden');
+            }
+
+            btnRecord.addEventListener('click', async (e) => {
+                e.preventDefault();
+                try {
+                    isCancelled = false;
+                    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    
+                    const options = { mimeType: 'audio/webm' };
+                    if (currentAudioQuality === 'high') options.audioBitsPerSecond = 256000;
+                    else if (currentAudioQuality === 'low') options.audioBitsPerSecond = 64000;
+                    else options.audioBitsPerSecond = 128000; 
+                    
+                    mediaRecorder = new MediaRecorder(stream, MediaRecorder.isTypeSupported(options.mimeType) ? options : undefined);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = e => {
+                        if (e.data.size > 0) audioChunks.push(e.data);
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        if (!isCancelled && audioChunks.length > 0) {
+                            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                            saveRecording(audioBlob, recordingTime);
+                        }
+                        
+                        if (stream) stream.getTracks().forEach(track => track.stop());
+                        stopVisualizer();
+                        clearInterval(timerInterval);
+                        
+                        btnRecord.classList.remove('hidden');
+                        recordingControls.classList.add('hidden');
+                        resetStatusDisplay();
+                        
+                        if (!isCancelled) {
+                            const currentName = filenameInput.value;
+                            const match = currentName.match(/(.*?)(\d+)$/);
+                            if (match) filenameInput.value = match[1] + (parseInt(match[2]) + 1);
+                        }
+                        updateStorageEstimate();
+                    };
+
+                    mediaRecorder.start(200);
+                    startVisualizer(stream);
+                    
+                    btnRecord.classList.add('hidden');
+                    recordingControls.classList.remove('hidden');
+                    iconPauseResume.innerHTML = svgIcons.pause;
+                    
+                    recordingTime = 0;
+                    startTime = Date.now();
+                    updateStatusDisplay();
+                    timerInterval = setInterval(() => {
+                        recordingTime = Date.now() - startTime;
+                        updateStatusDisplay();
+                    }, 100);
+
+                } catch (err) {
+                    alert("マイクへのアクセスが拒否されたか、エラーが発生しました。");
+                }
+            });
+
+            btnPauseResume.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (mediaRecorder.state === 'recording') {
+                    mediaRecorder.pause();
+                    iconPauseResume.innerHTML = svgIcons.mic;
+                    clearInterval(timerInterval);
+                    isVisualizerActive = false;
+                    pauseStatusText.classList.remove('hidden');
+                    recordStatusText.classList.remove('text-theme-accent');
+                    recordStatusText.classList.add('text-theme-muted');
+                } else if (mediaRecorder.state === 'paused') {
+                    mediaRecorder.resume();
+                    iconPauseResume.innerHTML = svgIcons.pause;
+                    isVisualizerActive = true;
+                    startVisualizer(stream); 
+                    
+                    startTime = Date.now() - recordingTime; 
+                    pauseStatusText.classList.add('hidden');
+                    recordStatusText.classList.remove('text-theme-muted');
+                    recordStatusText.classList.add('text-theme-accent');
+
+                    timerInterval = setInterval(() => {
+                        recordingTime = Date.now() - startTime;
+                        updateStatusDisplay();
+                    }, 100);
+                }
+            });
+
+            btnCancel.addEventListener('click', (e) => {
+                e.preventDefault();
+                isCancelled = true;
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+            });
+
+            btnStop.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+            });
+
+            let recordings = []; 
+            const recordingsList = document.getElementById('recordingsList');
+            const emptyMessage = document.getElementById('emptyMessage');
+            let currentSort = 'date'; 
+
+            document.querySelectorAll('.sort-option').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    currentSort = e.target.dataset.sort;
+                    renderList();
+                });
+            });
+
+            function saveRecording(blob, finalDurationMs) {
+                const url = URL.createObjectURL(blob);
+                let name = filenameInput.value.trim() || '名称未設定';
+                const now = new Date();
+                const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+                
+                recordings.unshift({
+                    id: Date.now(),
+                    name: name,
+                    url: url,
+                    dateStr: dateStr,
+                    durationMs: finalDurationMs,
+                    durationStr: formatTime(finalDurationMs),
+                    blob: blob,
+                    timestamp: now.getTime()
+                });
+                renderList();
+            }
+
+            let currentActiveId = null;
+            let itemToRename = null;
+            let itemToDelete = null;
+
+            const renameModal = document.getElementById('renameModal');
+            const renameInput = document.getElementById('renameInput');
+            const btnRenameCancel = document.getElementById('btnRenameCancel');
+            const btnRenameSave = document.getElementById('btnRenameSave');
+            
+            const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+            const btnDeleteCancel = document.getElementById('btnDeleteCancel');
+            const btnDeleteConfirm = document.getElementById('btnDeleteConfirm');
+
+            function closeRenameModal() {
+                renameModal.classList.add('hidden');
+                itemToRename = null;
+            }
+
+            btnRenameCancel.addEventListener('click', closeRenameModal);
+            btnRenameSave.addEventListener('click', () => {
+                if (itemToRename && renameInput.value.trim() !== '') {
+                    itemToRename.name = renameInput.value.trim();
+                    renderList();
+                }
+                closeRenameModal();
+            });
+
+            btnDeleteCancel.addEventListener('click', () => {
+                deleteConfirmModal.classList.add('hidden');
+                itemToDelete = null;
+            });
+
+            btnDeleteConfirm.addEventListener('click', () => {
+                if (itemToDelete) {
+                    recordings = recordings.filter(r => r.id !== itemToDelete.id);
+                    if (currentActiveId === itemToDelete.id) {
+                        document.getElementById('playerPanel').classList.add('opacity-50', 'pointer-events-none');
+                        document.getElementById('audioElement').pause();
+                        currentActiveId = null;
+                    }
+                    renderList();
+                }
+                deleteConfirmModal.classList.add('hidden');
+                itemToDelete = null;
+            });
+
+            function renderList() {
+                recordingsList.innerHTML = '';
+                const query = searchInput.value.toLowerCase();
+                
+                let filtered = recordings.filter(r => r.name.toLowerCase().includes(query));
+                
+                filtered.sort((a, b) => {
+                    if (currentSort === 'name') return a.name.localeCompare(b.name);
+                    return b.timestamp - a.timestamp;
+                });
+
+                if (filtered.length === 0) {
+                    emptyMessage.style.display = 'flex';
+                } else {
+                    emptyMessage.style.display = 'none';
+                    filtered.forEach(rec => {
+                        const item = document.createElement('div');
+                        item.className = `recording-item p-4 border-b border-theme cursor-pointer transition-colors relative ${rec.id === currentActiveId ? 'active' : ''}`;
+                        item.innerHTML = `
+                            <div class="flex items-center justify-between w-full">
+                                <div class="overflow-hidden flex-1 pr-4">
+                                    <div class="text-[15px] font-medium truncate filename-display select-none">${rec.name}.webm</div>
+                                    <div class="text-xs text-theme-muted mt-1 flex gap-3 select-none">
+                                        <span>${rec.dateStr}</span><span>${rec.durationStr}</span>
+                                    </div>
+                                </div>
+                                <div class="relative flex-shrink-0">
+                                    <button class="menu-btn w-10 h-10 rounded-full flex items-center justify-center hover:bg-black/10 transition-colors text-theme-muted hover:text-main outline-none text-[28px]" onclick="event.stopPropagation()">
+                                        <span class="select-none flex items-center justify-center w-full h-full">${svgIcons.more_vert}</span>
+                                    </button>
+                                    <div class="item-menu hidden absolute right-0 top-full mt-1 bg-theme-panel rounded-md shadow-xl py-2 z-50 border border-theme min-w-[140px] text-sm text-left cursor-default" onclick="event.stopPropagation()">
+                                        <button class="w-full text-left px-4 py-2 hover:bg-black/10 transition-colors btn-rename select-none outline-none text-main">名前を変更</button>
+                                        <a href="${rec.url}" download="${rec.name}.webm" class="block w-full text-left px-4 py-2 hover:bg-black/10 transition-colors select-none outline-none text-main" style="text-decoration: none;">ダウンロード</a>
+                                        <button class="w-full text-left px-4 py-2 hover:bg-black/10 transition-colors btn-delete select-none outline-none text-main">削除</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+
+                        item.addEventListener('click', () => {
+                            currentActiveId = rec.id;
+                            renderList(); 
+                            loadPlayer(rec);
+                        });
+
+                        const menuBtn = item.querySelector('.menu-btn');
+                        const itemMenu = item.querySelector('.item-menu');
+                        menuBtn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const isHidden = itemMenu.classList.contains('hidden');
+                            closeAllMenus();
+                            if (isHidden) itemMenu.classList.remove('hidden');
+                        });
+
+                        item.querySelector('.btn-delete').addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            itemMenu.classList.add('hidden');
+                            itemToDelete = rec;
+                            deleteConfirmModal.classList.remove('hidden');
+                        });
+
+                        item.querySelector('.btn-rename').addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            itemMenu.classList.add('hidden');
+                            itemToRename = rec;
+                            renameInput.value = rec.name;
+                            renameModal.classList.remove('hidden');
+                            renameInput.focus();
+                        });
+
+                        recordingsList.appendChild(item);
+                    });
+                }
+            }
+
+            const playerPanel = document.getElementById('playerPanel');
+            const audioEl = document.getElementById('audioElement');
+            const btnPlayPause = document.getElementById('btnPlayPause');
+            const playIcon = document.getElementById('playIcon');
+            const seekSlider = document.getElementById('seekSlider');
+            const currentTimeDisplay = document.getElementById('currentTimeDisplay');
+            const durationDisplay = document.getElementById('durationDisplay');
+            
+            const btnPlayerMenu = document.getElementById('btnPlayerMenu');
+            const playerSettingsMenu = document.getElementById('playerSettingsMenu');
+            const menuRewind = document.getElementById('menuRewind');
+            const menuForward = document.getElementById('menuForward');
+            const menuLoop = document.getElementById('menuLoop');
+            const menuSkipSilence = document.getElementById('menuSkipSilence');
+            const iconLoopCheck = document.getElementById('iconLoopCheck');
+            const iconSkipCheck = document.getElementById('iconSkipCheck');
+            const btnSpeed = document.getElementById('btnSpeed');
+
+            let isSkipSilenceActive = false;
+            let silenceCheckInterval;
+            let playAudioCtx, playAnalyser, playSource;
+
+            function loadPlayer(rec) {
+                audioEl.src = rec.url;
+                
+                playerPanel.classList.remove('opacity-50', 'pointer-events-none');
+                playIcon.innerHTML = svgIcons.play_arrow;
+                seekSlider.value = 0;
+                currentTimeDisplay.textContent = '00:00';
+                
+                const knownDurationSec = rec.durationMs / 1000;
+                seekSlider.max = knownDurationSec;
+                durationDisplay.textContent = rec.durationStr;
+                
+                audioEl.addEventListener('loadedmetadata', function onMeta() {
+                    if (audioEl.duration === Infinity) {
+                        audioEl.currentTime = 1e101; 
+                        audioEl.addEventListener('timeupdate', function onTime() {
+                            audioEl.removeEventListener('timeupdate', onTime);
+                            audioEl.currentTime = 0; 
+                        });
+                    }
+                }, {once: true});
+
+                initPlayAnalyser();
+            }
+
+            function initPlayAnalyser() {
+                if(!playAudioCtx) {
+                    playAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    playSource = playAudioCtx.createMediaElementSource(audioEl);
+                    playAnalyser = playAudioCtx.createAnalyser();
+                    playSource.connect(playAnalyser);
+                    playAnalyser.connect(playAudioCtx.destination);
+                    playAnalyser.fftSize = 256;
+                }
+            }
+
+            function togglePlay(e) {
+                if (e) e.preventDefault();
+                if (!audioEl.src) return;
+                if (audioEl.paused) {
+                    if (playAudioCtx && playAudioCtx.state === 'suspended') playAudioCtx.resume();
+                    audioEl.play();
+                    playIcon.innerHTML = svgIcons.pause;
+                    startSilenceSkipPoller();
+                } else {
+                    audioEl.pause();
+                    playIcon.innerHTML = svgIcons.play_arrow;
+                    stopSilenceSkipPoller();
+                }
+            }
+
+            btnPlayPause.addEventListener('click', togglePlay);
+
+            audioEl.addEventListener('timeupdate', () => {
+                if (!audioEl.paused) {
+                    seekSlider.value = audioEl.currentTime;
+                    currentTimeDisplay.textContent = formatTime(audioEl.currentTime * 1000);
+                }
+            });
+
+            audioEl.addEventListener('ended', () => {
+                if(!audioEl.loop) {
+                    playIcon.innerHTML = svgIcons.play_arrow;
+                    seekSlider.value = 0;
+                    currentTimeDisplay.textContent = '00:00';
+                    stopSilenceSkipPoller();
+                }
+            });
+
+            seekSlider.addEventListener('input', () => {
+                currentTimeDisplay.textContent = formatTime(seekSlider.value * 1000);
+            });
+            seekSlider.addEventListener('change', () => {
+                audioEl.currentTime = seekSlider.value;
+            });
+
+            document.getElementById('btnReplay5').addEventListener('click', (e) => { e.preventDefault(); audioEl.currentTime = Math.max(0, audioEl.currentTime - 5); });
+            document.getElementById('btnForward5').addEventListener('click', (e) => { e.preventDefault(); audioEl.currentTime = Math.min(seekSlider.max, audioEl.currentTime + 5); });
+
+            btnPlayerMenu.addEventListener('click', (e) => {
+                e.preventDefault(); 
+                e.stopPropagation();
+                const isHidden = playerSettingsMenu.classList.contains('hidden');
+                closeAllMenus();
+                if (isHidden) playerSettingsMenu.classList.remove('hidden');
+            });
+
+            menuRewind.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); audioEl.currentTime = Math.max(0, audioEl.currentTime - 5); playerSettingsMenu.classList.add('hidden'); });
+            menuForward.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); audioEl.currentTime = Math.min(seekSlider.max, audioEl.currentTime + 5); playerSettingsMenu.classList.add('hidden'); });
+            
+            menuLoop.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                audioEl.loop = !audioEl.loop;
+                if(audioEl.loop) iconLoopCheck.classList.remove('hidden');
+                else iconLoopCheck.classList.add('hidden');
+                playerSettingsMenu.classList.add('hidden');
+            });
+
+            menuSkipSilence.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                isSkipSilenceActive = !isSkipSilenceActive;
+                if(isSkipSilenceActive) {
+                    iconSkipCheck.classList.remove('hidden');
+                    if(!audioEl.paused) startSilenceSkipPoller();
+                } else {
+                    iconSkipCheck.classList.add('hidden');
+                    stopSilenceSkipPoller();
+                }
+                playerSettingsMenu.classList.add('hidden');
+            });
+
+            const speeds = [1.0, 1.5, 2.0, 0.5];
+            let speedIdx = 0;
+            btnSpeed.addEventListener('click', (e) => {
+                e.preventDefault();
+                speedIdx = (speedIdx + 1) % speeds.length;
+                audioEl.playbackRate = speeds[speedIdx];
+                btnSpeed.textContent = speeds[speedIdx] + 'x';
+            });
+
+            function startSilenceSkipPoller() {
+                if(!isSkipSilenceActive || !playAnalyser) return;
+                if(silenceCheckInterval) clearInterval(silenceCheckInterval);
+                
+                const bufferLength = playAnalyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                
+                silenceCheckInterval = setInterval(() => {
+                    if(audioEl.paused) return;
+                    playAnalyser.getByteFrequencyData(dataArray);
+                    let maxVol = 0;
+                    for(let i=0; i<bufferLength; i++) if(dataArray[i] > maxVol) maxVol = dataArray[i];
+                    
+                    if(maxVol < 10) {
+                        if(audioEl.currentTime + 0.2 < seekSlider.max) {
+                            audioEl.currentTime += 0.2;
+                            seekSlider.value = audioEl.currentTime;
+                        }
+                    }
+                }, 100);
+            }
+
+            function stopSilenceSkipPoller() {
+                if(silenceCheckInterval) clearInterval(silenceCheckInterval);
+            }
+        });
+    </script>
+    
+    <!-- 外部のService Workerを読み込む -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').catch(console.error);
+        });
+      }
+    </script>
+</body>
+</html>
